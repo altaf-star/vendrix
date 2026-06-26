@@ -115,10 +115,12 @@ io.on('connection', (socket) => {
   });
 });
 
-// ─── Start Server ────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
-  logger.info(`Vendrix server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// ─── Start Server (skip in Vercel serverless environment) ────────────────────
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  httpServer.listen(PORT, () => {
+    logger.info(`Vendrix server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+}
 
 export default app;
