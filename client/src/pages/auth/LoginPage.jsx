@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth.js';
+import { authService } from '../../services/api.js';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const { login, loading, error, clearAuthError } = useAuth();
@@ -10,6 +12,21 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [resending, setResending] = useState(false);
+
+  const isUnverifiedError = error?.toLowerCase().includes('verify your email');
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      await authService.resendVerificationByEmail(form.email);
+      toast.success('Verification email sent — check your inbox');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to resend');
+    } finally {
+      setResending(false);
+    }
+  };
 
   // Clear server error when user starts typing
   useEffect(() => { if (error) clearAuthError(); }, [form]);
@@ -69,6 +86,16 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
               {error}
+              {isUnverifiedError && (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="block mt-2 text-primary-600 hover:underline font-medium disabled:opacity-50"
+                >
+                  {resending ? 'Sending…' : 'Resend verification email'}
+                </button>
+              )}
             </div>
           )}
 

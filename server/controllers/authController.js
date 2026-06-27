@@ -268,6 +268,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 // ─── POST /api/auth/resend-verification ──────────────────────────────────────
+// Protected — for logged-in users who haven't verified yet
 export const resendVerification = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('+emailVerificationToken +emailVerificationExpire');
 
@@ -285,6 +286,28 @@ export const resendVerification = asyncHandler(async (req, res) => {
   await sendVerificationEmail({ to: user.email, name: user.name, verifyUrl });
 
   res.json({ success: true, message: 'Verification email resent' });
+});
+
+// ─── POST /api/auth/resend-verification-by-email ─────────────────────────────
+// Public — for users blocked at login who need a new verification email
+export const resendVerificationByEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Always respond 200 to prevent email enumeration
+  const user = await User.findOne({ email });
+  if (!user || user.isEmailVerified) {
+    return res.json({ success: true, message: 'If this email exists and is unverified, a link has been sent' });
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+
+  const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+  await sendVerificationEmail({ to: user.email, name: user.name, verifyUrl });
+
+  res.json({ success: true, message: 'Verification email sent' });
 });
 
 // ─── POST /api/auth/reset-password/:token ────────────────────────────────────

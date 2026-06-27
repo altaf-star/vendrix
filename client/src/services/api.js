@@ -92,6 +92,7 @@ export const authService = {
   resetPassword: (token, data)  => api.post(`/auth/reset-password/${token}`, data),
   verifyEmail: (token)          => api.get(`/auth/verify-email/${token}`),
   resendVerification: ()        => api.post('/auth/resend-verification'),
+  resendVerificationByEmail: (email) => api.post('/auth/resend-verification-by-email', { email }),
 };
 
 export const productService = {
