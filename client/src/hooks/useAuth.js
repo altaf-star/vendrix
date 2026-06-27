@@ -33,13 +33,13 @@ export const useAuth = () => {
   const register = async (data) => {
     const result = await dispatch(registerUser(data));
     if (registerUser.fulfilled.match(result)) {
-      const { role } = result.payload.user;
-      if (role === 'vendor') {
+      // Vendor: payload has user + tokens → navigate to pending page
+      if (result.payload.user?.role === 'vendor') {
         toast.success('Application submitted! We\'ll review your shop shortly.');
         navigate('/vendor/pending');
         return null;
       }
-      // Customer: return success so RegisterPage can show "check your email" screen
+      // Customer: payload is { success: true } only → tell RegisterPage to show "check email"
       return { success: true };
     }
     return null;

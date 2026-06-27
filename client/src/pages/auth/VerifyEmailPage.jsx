@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/api.js';
 
 export default function VerifyEmailPage() {
   const { token } = useParams();
+  const navigate = useNavigate();
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [message, setMessage] = useState('');
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     authService.verifyEmail(token)
@@ -15,6 +17,21 @@ export default function VerifyEmailPage() {
         setStatus('error');
       });
   }, [token]);
+
+  // Auto-redirect to login after success
+  useEffect(() => {
+    if (status !== 'success') return;
+    const interval = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(interval);
+          navigate('/login');
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status, navigate]);
 
   if (status === 'verifying') {
     return (
@@ -37,8 +54,9 @@ export default function VerifyEmailPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Email verified!</h2>
-          <p className="text-gray-500 mb-6">Your account is now fully activated.</p>
-          <Link to="/login" className="btn-primary btn-lg">Go to Login</Link>
+          <p className="text-gray-500 mb-2">Your account is now fully activated.</p>
+          <p className="text-sm text-gray-400 mb-6">Redirecting to sign in in {countdown}…</p>
+          <Link to="/login" className="btn-primary btn-lg">Sign In Now</Link>
         </div>
       </div>
     );

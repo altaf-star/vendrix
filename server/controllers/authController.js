@@ -80,19 +80,15 @@ export const register = asyncHandler(async (req, res) => {
 
   logger.info(`New ${assignedRole} registered: ${email}`);
 
-  const accessToken = generateAccessToken(user._id, user.role);
-  const refreshToken = generateRefreshToken(user._id);
-  user.refreshToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
-  user.lastLogin = new Date();
-  await user.save({ validateBeforeSave: false });
-  setRefreshCookie(res, refreshToken);
+  if (emailError) logger.error(`Verification email failed for ${email}: ${emailError}`);
 
-  res.status(201).json({
-    success: true,
-    accessToken,
-    user: user.toPublicJSON(),
-    ...(emailError && { _emailDebug: emailError }),
-  });
+  // Vendors are logged in immediately (need access to /vendor/pending)
+  // Customers must verify email first before logging in
+  if (assignedRole === 'vendor') {
+    await sendTokenResponse(user, 201, res);
+  } else {
+    res.status(201).json({ success: true, message: 'Account created — check your email to verify' });
+  }
 });
 
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
@@ -109,11 +105,6 @@ export const login = asyncHandler(async (req, res) => {
   if (!isMatch) {
     res.status(401);
     throw new Error('Invalid email or password');
-  }
-
-  if (!user.isEmailVerified) {
-    res.status(403);
-    throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
   }
 
   if (!user.isActive) {

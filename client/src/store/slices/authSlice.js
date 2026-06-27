@@ -79,9 +79,13 @@ const authSlice = createSlice({
       .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
-        state.isAuthenticated = true;
+        // Vendor: backend returns tokens → log in immediately
+        // Customer: backend returns { success: true } only → don't authenticate (must verify email first)
+        if (action.payload.accessToken) {
+          state.user = action.payload.user;
+          state.accessToken = action.payload.accessToken;
+          state.isAuthenticated = true;
+        }
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
