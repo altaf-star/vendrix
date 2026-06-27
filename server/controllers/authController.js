@@ -70,12 +70,29 @@ export const register = asyncHandler(async (req, res) => {
   const user = await User.create(userData);
 
   const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-  sendVerificationEmail({ to: user.email, name: user.name, verifyUrl }).catch((err) =>
-    logger.error(`Verification email failed: ${err.message}`)
-  );
+  let emailError = null;
+  try {
+    await sendVerificationEmail({ to: user.email, name: user.name, verifyUrl });
+  } catch (err) {
+    emailError = err.message;
+    logger.error(`Verification email failed: ${err.message}`);
+  }
 
   logger.info(`New ${assignedRole} registered: ${email}`);
-  await sendTokenResponse(user, 201, res);
+
+  const accessToken = generateAccessToken(user._id, user.role);
+  const refreshToken = generateRefreshToken(user._id);
+  user.refreshToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+  user.lastLogin = new Date();
+  await user.save({ validateBeforeSave: false });
+  setRefreshCookie(res, refreshToken);
+
+  res.status(201).json({
+    success: true,
+    accessToken,
+    user: user.toPublicJSON(),
+    ...(emailError && { _emailDebug: emailError }),
+  });
 });
 
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
