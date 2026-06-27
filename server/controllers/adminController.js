@@ -3,6 +3,8 @@ import User from '../models/User.js';
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import { deleteCloudinaryImage } from '../config/cloudinary.js';
+import { sendVendorApprovedEmail, sendVendorRejectedEmail } from '../utils/email.js';
+import { logger } from '../utils/logger.js';
 
 // ─── GET /api/admin/dashboard ─────────────────────────────────────────────────
 export const getDashboard = asyncHandler(async (req, res) => {
@@ -186,6 +188,9 @@ export const approveVendor = asyncHandler(async (req, res) => {
   vendor.markModified('vendorInfo');
   await vendor.save({ validateBeforeSave: false });
 
+  sendVendorApprovedEmail({ to: vendor.email, name: vendor.name, shopName: vendor.vendorInfo.shopName })
+    .catch((err) => logger.error(`Vendor approved email failed: ${err.message}`));
+
   res.json({ success: true, message: `Vendor "${vendor.vendorInfo.shopName}" approved` });
 });
 
@@ -203,6 +208,9 @@ export const rejectVendor = asyncHandler(async (req, res) => {
   vendor.vendorInfo.applicationNote = note || 'Application rejected';
   vendor.markModified('vendorInfo');
   await vendor.save({ validateBeforeSave: false });
+
+  sendVendorRejectedEmail({ to: vendor.email, name: vendor.name, shopName: vendor.vendorInfo.shopName, note })
+    .catch((err) => logger.error(`Vendor rejected email failed: ${err.message}`));
 
   res.json({ success: true, message: `Vendor "${vendor.vendorInfo.shopName}" rejected` });
 });

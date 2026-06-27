@@ -90,6 +90,8 @@ export const authService = {
   changePassword: (data)        => api.put('/auth/change-password', data),
   forgotPassword: (email)       => api.post('/auth/forgot-password', { email }),
   resetPassword: (token, data)  => api.post(`/auth/reset-password/${token}`, data),
+  verifyEmail: (token)          => api.get(`/auth/verify-email/${token}`),
+  resendVerification: ()        => api.post('/auth/resend-verification'),
 };
 
 export const productService = {

@@ -23,6 +23,7 @@ const LoginPage         = lazy(() => import('./pages/auth/LoginPage.jsx'));
 const RegisterPage      = lazy(() => import('./pages/auth/RegisterPage.jsx'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage.jsx'));
 const ResetPasswordPage  = lazy(() => import('./pages/auth/ResetPasswordPage.jsx'));
+const VerifyEmailPage    = lazy(() => import('./pages/auth/VerifyEmailPage.jsx'));
 
 const VendorDashboard   = lazy(() => import('./pages/vendor/VendorDashboard.jsx'));
 const VendorProducts    = lazy(() => import('./pages/vendor/VendorProducts.jsx'));
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="/register"       element={<GuestRoute><RegisterPage /></GuestRoute>} />
         <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
         <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+        <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 
         {/* ── Public storefront ───────────────────────────────────────────── */}
         <Route element={<MainLayout />}>

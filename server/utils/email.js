@@ -12,6 +12,73 @@ const createTransporter = () =>
     },
   });
 
+export const sendVerificationEmail = async ({ to, name, verifyUrl }) => {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `"Vendrix" <${process.env.EMAIL_FROM}>`,
+    to,
+    subject: 'Verify your Vendrix email',
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff">
+        <img src="${process.env.CLIENT_URL}/vendrix-logo.jpg" alt="Vendrix" style="height:48px;margin-bottom:24px;border-radius:8px"/>
+        <h2 style="color:#1e293b;margin:0 0 8px">Welcome to Vendrix, ${name}!</h2>
+        <p style="color:#64748b;margin:0 0 24px">You're almost ready. Click the button below to verify your email address and activate your account.</p>
+        <a href="${verifyUrl}" style="display:inline-block;background:#a821d4;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+          Verify Email Address
+        </a>
+        <p style="color:#94a3b8;font-size:13px;margin:24px 0 0">
+          This link expires in 24 hours.<br/>
+          If you didn't create an account, you can safely ignore this email.
+        </p>
+      </div>
+    `,
+  });
+  logger.info(`Verification email sent to ${to}`);
+};
+
+export const sendVendorApprovedEmail = async ({ to, name, shopName }) => {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `"Vendrix" <${process.env.EMAIL_FROM}>`,
+    to,
+    subject: `Your shop "${shopName}" is approved!`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff">
+        <img src="${process.env.CLIENT_URL}/vendrix-logo.jpg" alt="Vendrix" style="height:48px;margin-bottom:24px;border-radius:8px"/>
+        <h2 style="color:#1e293b;margin:0 0 8px">Congratulations, ${name}!</h2>
+        <p style="color:#64748b;margin:0 0 8px">Your vendor application for <strong>${shopName}</strong> has been approved.</p>
+        <p style="color:#64748b;margin:0 0 24px">You can now log in and start adding products to your shop.</p>
+        <a href="${process.env.CLIENT_URL}/vendor/dashboard" style="display:inline-block;background:#a821d4;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+          Go to Vendor Dashboard
+        </a>
+      </div>
+    `,
+  });
+  logger.info(`Vendor approved email sent to ${to}`);
+};
+
+export const sendVendorRejectedEmail = async ({ to, name, shopName, note }) => {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `"Vendrix" <${process.env.EMAIL_FROM}>`,
+    to,
+    subject: `Update on your vendor application — ${shopName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff">
+        <img src="${process.env.CLIENT_URL}/vendrix-logo.jpg" alt="Vendrix" style="height:48px;margin-bottom:24px;border-radius:8px"/>
+        <h2 style="color:#1e293b;margin:0 0 8px">Hi ${name},</h2>
+        <p style="color:#64748b;margin:0 0 8px">Unfortunately, your vendor application for <strong>${shopName}</strong> was not approved at this time.</p>
+        ${note ? `<p style="color:#64748b;margin:0 0 24px">Reason: <em>${note}</em></p>` : ''}
+        <p style="color:#64748b;margin:0 0 24px">You're welcome to re-apply after addressing the feedback. Contact us if you have questions.</p>
+        <a href="${process.env.CLIENT_URL}/contact" style="display:inline-block;background:#64748b;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+          Contact Support
+        </a>
+      </div>
+    `,
+  });
+  logger.info(`Vendor rejected email sent to ${to}`);
+};
+
 export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
   const transporter = createTransporter();
 

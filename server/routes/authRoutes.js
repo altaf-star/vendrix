@@ -9,6 +9,8 @@ import {
   changePassword,
   forgotPassword,
   resetPassword,
+  verifyEmail,
+  resendVerification,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
@@ -70,6 +72,8 @@ router.post('/logout', logout);
 router.post('/refresh', refreshToken);
 router.post('/forgot-password', forgotPasswordRules, validate, forgotPassword);
 router.post('/reset-password/:token', resetPasswordRules, validate, resetPassword);
+router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', protect, resendVerification);
 
 // ─── Protected Routes ─────────────────────────────────────────────────────────
 router.get('/me', protect, getMe);

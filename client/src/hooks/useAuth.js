@@ -37,13 +37,12 @@ export const useAuth = () => {
       if (role === 'vendor') {
         toast.success('Application submitted! We\'ll review your shop shortly.');
         navigate('/vendor/pending');
-      } else {
-        toast.success('Account created — welcome to Vendrix!');
-        navigate('/');
+        return null;
       }
-      return true;
+      // Customer: return success so RegisterPage can show "check your email" screen
+      return { success: true };
     }
-    return false;
+    return null;
   };
 
   const logout = async () => {

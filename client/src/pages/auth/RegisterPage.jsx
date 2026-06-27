@@ -22,7 +22,8 @@ export default function RegisterPage() {
   const { register, loading, error, clearAuthError } = useAuth();
   const [searchParams] = useSearchParams();
 
-  const [step, setStep] = useState(1); // 1 = role select, 2 = form
+  const [step, setStep] = useState(1); // 1 = role select, 2 = form, 3 = check email
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const [role, setRole] = useState(searchParams.get('role') || 'customer');
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -71,8 +72,32 @@ export default function RegisterPage() {
       payload.businessEmail = form.businessEmail || form.email;
       payload.businessPhone = form.businessPhone;
     }
-    await register(payload);
+    const result = await register(payload);
+    if (result?.success) {
+      setRegisteredEmail(form.email);
+      setStep(3);
+    }
+    // vendor case: useAuth handles navigation to /vendor/pending
   };
+
+  if (step === 3) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center max-w-sm w-full">
+          <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h2>
+          <p className="text-gray-500 mb-1">We sent a verification link to</p>
+          <p className="font-semibold text-gray-900 mb-6">{registeredEmail}</p>
+          <p className="text-sm text-gray-400">Click the link in the email to activate your account. Check your spam folder if you don't see it.</p>
+          <Link to="/login" className="btn-ghost btn-sm mt-6 inline-block">Back to Login</Link>
+        </div>
+      </div>
+    );
+  }
 
   if (step === 1) {
     return (

@@ -1,7 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import crypto from 'crypto';
 import User from '../models/User.js';
-import { sendPasswordResetEmail } from '../utils/email.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../utils/email.js';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -63,7 +63,16 @@ export const register = asyncHandler(async (req, res) => {
     };
   }
 
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  userData.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  userData.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
   const user = await User.create(userData);
+
+  const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+  sendVerificationEmail({ to: user.email, name: user.name, verifyUrl }).catch((err) =>
+    logger.error(`Verification email failed: ${err.message}`)
+  );
 
   logger.info(`New ${assignedRole} registered: ${email}`);
   await sendTokenResponse(user, 201, res);
@@ -209,6 +218,48 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     // Only expose token in development for testing
     ...(process.env.NODE_ENV === 'development' && { resetToken }),
   });
+});
+
+// ─── GET /api/auth/verify-email/:token ───────────────────────────────────────
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpire: { $gt: Date.now() },
+  }).select('+emailVerificationToken +emailVerificationExpire');
+
+  if (!user) {
+    res.status(400);
+    throw new Error('Verification link is invalid or has expired');
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpire = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  res.json({ success: true, message: 'Email verified successfully' });
+});
+
+// ─── POST /api/auth/resend-verification ──────────────────────────────────────
+export const resendVerification = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('+emailVerificationToken +emailVerificationExpire');
+
+  if (user.isEmailVerified) {
+    res.status(400);
+    throw new Error('Email is already verified');
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+
+  const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+  await sendVerificationEmail({ to: user.email, name: user.name, verifyUrl });
+
+  res.json({ success: true, message: 'Verification email resent' });
 });
 
 // ─── POST /api/auth/reset-password/:token ────────────────────────────────────
