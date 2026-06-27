@@ -229,14 +229,17 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 export const verifyEmail = asyncHandler(async (req, res) => {
   const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-  const user = await User.findOne({
-    emailVerificationToken: hashedToken,
-    emailVerificationExpire: { $gt: Date.now() },
-  }).select('+emailVerificationToken +emailVerificationExpire');
+  const user = await User.findOne({ emailVerificationToken: hashedToken })
+    .select('+emailVerificationToken +emailVerificationExpire');
 
   if (!user) {
     res.status(400);
-    throw new Error('Verification link is invalid or has expired');
+    throw new Error('Verification link is invalid or already used');
+  }
+
+  if (user.emailVerificationExpire && user.emailVerificationExpire < Date.now()) {
+    res.status(400);
+    throw new Error('Verification link has expired — please request a new one');
   }
 
   user.isEmailVerified = true;
