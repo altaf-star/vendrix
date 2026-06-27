@@ -24,8 +24,8 @@ import aiRoutes from './routes/aiRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB (awaited in serverless via middleware, called eagerly in traditional server)
+if (!process.env.VERCEL) connectDB();
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -73,6 +73,14 @@ app.use(mongoSanitize());
 // HTTP request logger (skip in test env)
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined', { stream: { write: (msg) => logger.http(msg.trim()) } }));
+}
+
+// Ensure DB is connected on every request in serverless environment
+if (process.env.VERCEL) {
+  app.use(async (req, res, next) => {
+    await connectDB();
+    next();
+  });
 }
 
 // ─── Health Check ───────────────────────────────────────────────────────────
